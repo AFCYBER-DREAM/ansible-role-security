@@ -1,0 +1,10 @@
+---
+
+- name: Install require packages
+  import_role:
+    name: ansible-role-packages
+  vars:
+    packages: "{{ security_packages }}"
+
+- name: Include proper security module for os
+  include_tasks: "{{ ansible_os_family | lower }}.yml"
