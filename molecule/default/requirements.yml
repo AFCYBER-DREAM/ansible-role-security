@@ -1,0 +1,3 @@
+---
+- src: git+https://github.com/leader716/ansible-role-packages.git
+  version: jward-role-packages

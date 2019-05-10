@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    security:
+      selinux_te_files:
+        - { name: "zabbix_server_add", version: "1.1", te_file: "test.te"}
+      security_ports:
+        - { port: 3306, protocol: 'tcp', port_type: 'mysqld_port_t'}
+
+  roles:
+    - role: ansible-role-security

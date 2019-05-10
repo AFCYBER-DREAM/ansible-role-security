@@ -1,0 +1,63 @@
+---
+- name: Apply SELinux Configuration
+  block:
+    - name: Apply seport configurations
+      seport:
+        ports: "{{ item.port }}"
+        proto: "{{ item.protocol }}"
+        setype: "{{ item.port_type }}"
+        state: present
+      with_items:
+        - "{{ security.security_ports }}"
+      when: security.security_ports.index > 0
+
+    - name: Apply seboolean changes
+      seboolean:
+        name: "{{ item.name }}"
+        persistent: "{{ item.persistent | default('yes') }}"
+        state: "{{ item.state }}"
+      with_items:
+        - "{{ security.sebooleans }}"
+      when:
+        - security.sebooleans is defined
+        - security.sebooleans.index > 0
+
+    # We need to ensure that the selinux te files are in the
+    # proper location
+    - name: Install SELinux TE Files
+      block:
+        - name: Copy selinux te files to /tmp
+          copy:
+            src: "{{ item.te_file }}"
+            dest: '/tmp/'
+          with_items:
+            "{{ security.selinux_te_files }}"
+          register: selinux_copy_files
+
+        # We now apply the te files to the system
+        - name: Apply te files
+          semodule:
+            te_file: "/tmp/{{ item.te_file }}"
+            module_name: "{{ item.name }}"
+            module_version: "{{ item.version }}"
+          with_items:
+            "{{ security.selinux_te_files }}"
+      when:
+        - security.selinux_te_files is defined
+        - security.selinux_te_files.index > 0
+  when:
+    - ansible_selinux
+    - ansible_selinux.status != 'disabled'
+    - ansible_selinux.status != "Missing selinux Python library"
+
+- name: Configure firewall ports
+  firewalld:
+    zone: "{{ item.zone | default('public') }}"
+    port: "{{ item.port }}{{ '/' + item.protocol | default(omit) }}"
+    permanent: true
+    state: enabled
+  with_items:
+    "{{ security.security_ports }}"
+  when:
+    security.security_ports.index > 0
+  notify: "reload firewalld"

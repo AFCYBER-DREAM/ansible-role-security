@@ -1,0 +1,26 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint:
+  name: yamllint
+platforms:
+  - name: instance
+    image: centos:7
+    command: "/usr/sbin/init"
+    env:
+      container: docker
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /tmp/{mktemp -d}:/run
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+scenario:
+  name: container
+verifier:
+  name: testinfra
+  lint:
+    name: flake8
